@@ -1,41 +1,279 @@
 body {
     font-family: Arial, sans-serif;
     margin: 30px;
+
+    background-color: #c8a2e8;
+      color: rgb(248, 255, 34);
+
+    background-image:
+        linear-gradient(
+            rgba(0, 0, 0, 0.2) 2px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.2) 1px,
+            transparent 1px
+        );
+
+    background-size: 30px 30px;
 }
+
+
+/* =========================
+   TITLE
+   ========================= */
 
 h1 {
     text-align: center;
 }
+
+
+/* =========================
+   BUTTONS / CONTROLS
+   ========================= */
+
+button {
+    background-color: #ff69b4;
+    color: black;
+
+    border: 2px solid black;
+    border-radius: 12px;
+
+    padding: 10px 18px;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+
+/* Put the main buttons in a row */
+
+#set-day,
+#clear-day,
+#rest-day {
+    display: inline-block;
+}
+
+
+/* Center the main controls */
+
+body {
+    text-align: center;
+}
+
+
+/* Starting slots */
+
+#starting-slots-control {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+
+    margin: 15px 0;
+}
+
+
+/* =========================
+   DAY NAVIGATION
+   ========================= */
+
+.day-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.day-navigation button {
+    font-size: 20px;
+
+    width: 45px;
+    height: 40px;
+
+    padding: 0;
+}
+
+#current-day {
+    font-size: 22px;
+    font-weight: bold;
+
+    min-width: 120px;
+    text-align: center;
+}
+
+
+/* =========================
+   PLANNER
+   ========================= */
 
 .planner {
     width: 100%;
     overflow-x: auto;
 }
 
-table {
+.day-page {
     width: 100%;
-    border-collapse: collapse;
+    position: relative;
 }
 
-th, td {
-    border: 1px solid black;
+
+ /* =========================
+    TABLE
+    ========================= */
+
+.planner-table {
+    position: relative;
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffb6d9;
+    color: black;
+}
+
+.planner-table th:first-child,
+.planner-table td:first-child {
+    width: 10%;
+}
+
+.planner-table th:last-child,
+.planner-table td:last-child {
+    width: 90%;
+}
+
+th,
+td {
+    border: 2px solid black;
     padding: 10px;
     text-align: center;
 }
 
 th {
-    background-color: #eeeeee;
+    background-color: #ff85be;
+    color: black;
 }
 
 td {
     height: 30px;
-    background-color: rgb(140, 255, 194);
+    background-color: #ffb6d9;
+}
+/* =========================
+   SLOT STATES
+   ========================= */
+
+.quarter-area.normal-slot {
+    background-color: #00ff77;
 }
 
-td.normal-slot {
-    background-color: rgb(0, 255, 119);
+.quarter-area.creative-slot {
+    background-color: #68ffe8;
 }
 
-td.creative-slot {
-    background-color: rgb(255, 100, 214);
+
+/* =========================
+   CELL INTERACTION
+   ========================= */
+
+.quarter-area.planner-cell {
+    cursor: pointer;
+}
+
+.quarter-area.planner-cell:hover {
+    opacity: 0.75;
+}
+
+.rest-day-cell {
+    background-color: lightblue;
+}
+
+.hour-slot {
+    padding: 0;
+    height: 80px;
+}
+
+.quarter-area {
+    height: 25%;
+    box-sizing: border-box;
+}
+
+
+/* =========================
+   SELECTION
+   ========================= */
+
+.selected-slot {
+    background-color: yellow;
+
+    border-left: 2px solid black;
+    border-right: 2px solid black;
+}
+
+.selected-slot:first-child {
+    border-top: 2px solid black;
+}
+
+.selected-slot:last-child {
+    border-bottom: 2px solid black;
+}
+
+
+/* =========================
+   MERGED SLOTS
+   ========================= */
+
+.merged-slot {
+    position: absolute;
+    z-index: 10;
+
+    border: 2px solid black;
+    box-sizing: border-box;
+
+    cursor: pointer;
+
+    background-color: #00ff77;
+}
+
+.merged-slot.normal-slot {
+    background-color: #00ff77;
+}
+
+.merged-slot.creative-slot {
+    background-color: #ff64d6;
+}
+
+.merged-slot.empty-slot {
+    background-color: #c8a2e8;
+}
+
+
+/* =========================
+   MERGED SLOT TEXT
+   ========================= */
+
+.merged-slot textarea {
+    width: 100%;
+    height: 100%;
+
+    box-sizing: border-box;
+
+    border: none;
+    outline: none;
+    resize: none;
+
+    background: transparent;
+
+    text-align: center;
+
+    padding: 10px;
+
+    font-family: Arial, sans-serif;
+    font-size: 16px;
 }

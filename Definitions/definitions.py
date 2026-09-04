@@ -167,16 +167,39 @@ class TimeTable:
             ] = slot_type         
 
     def calc_residual(self, weekday):
-        total_required = 32 * weekday
+
+        # =========================
+        # NORMAL SLOTS
+        # =========================
+
+        normal_required = DAILY_NORMAL_SLOTS * weekday
 
         if self.rest_day is not None and self.rest_day <= weekday:
-            total_required -= 32
+            normal_required -= DAILY_NORMAL_SLOTS
 
-        total_required += self.starting_slots
+        normal_required += self.starting_slots
 
-        total_used = self.week_df.iloc[:, :weekday].sum().sum()
+        normal_used = (
+            self.week_df.iloc[:, :weekday] == NORMAL
+        ).sum().sum()
 
-        return total_required - total_used
+        normal_residual = normal_required - normal_used
+
+
+        # =========================
+        # CREATIVE SLOTS
+        # =========================
+
+        creative_required = DAILY_CREATIVE_SLOTS * weekday
+
+        creative_used = (
+            self.week_df.iloc[:, :weekday] == CREATIVE
+        ).sum().sum()
+
+        creative_residual = creative_required - creative_used
+
+
+        return normal_residual, creative_residual
 
 if __name__ == "__main__":
 
