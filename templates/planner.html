@@ -13,86 +13,168 @@
 <body>
 
     <h1>Weekly Planner</h1>
-    <div class="day-navigation">
 
-    <button id="previous-day">←</button>
 
-    <span id="current-day">{{ today }}</span>
+    <button id="set-day">SET DAY</button>
 
-    <button id="next-day">→</button>
+    <button id="clear-day">CLEAR DAY</button>
+
+    <button id="rest-day">REST DAY</button>
+
+<div id="starting-slots-control">
+
+    <label for="starting-slots">
+        Starting slots:
+    </label>
+
+    <input
+        type="number"
+        id="starting-slots"
+        min="0"
+        value="0"
+    >
+
+    <button id="set-starting-slots">
+        SET STARTING SLOTS
+    </button>
+
+</div>
+    
+    <div id="residual-display">
+
+        <p>
+            Normal residual:
+            <span id="normal-residual">-</span>
+        </p>
+
+        <p>
+            Creative residual:
+            <span id="creative-residual">-</span>
+        </p>
 
     </div>
 
-    <div class="planner">
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Monday</th>
-                    <th>Tuesday</th>
-                    <th>Wednesday</th>
-                    <th>Thursday</th>
-                    <th>Friday</th>
-                    <th>Saturday</th>
-                    <th>Sunday</th>
-                </tr>
-            </thead>
+    <!-- Day navigation -->
 
-           <tbody>
-    {% for slot, time in timeslot_conv.items() %}
-    <tr>
-        <td>{{ time }}</td>
+    <div class="day-navigation">
+
+        <button id="previous-day">←</button>
+
+        <span id="current-day">{{ today }}</span>
+
+        <button id="next-day">→</button>
+
+    </div>
+    
+
+    <!-- The seven independent day pages -->
+
+    <div class="planner">
 
         {% for day in timetable.week_df.columns %}
 
-            {% set cell_value = timetable.week_df.loc[slot, day] %}
+        <div class="day-page" data-day="{{ day }}">
 
-            <td class="planner-cell
-                {% if cell_value == 1 %} normal-slot
-                {% elif cell_value == 2 %} creative-slot
-                {% endif %}"
-                data-day="{{ day }}"
-                data-slot="{{ slot }}">
+            <table>
 
-                {% if cell_value == 1 %}
-                    ✓
-                {% elif cell_value == 2 %}
-                    ✦
-                {% endif %}
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>{{ day }}</th>
+                    </tr>
+                </thead>
 
-            </td>
+                <tbody>
+
+                    {% for slot, time in timeslot_conv.items() %}
+
+                        {% set cell_value =
+                            timetable.week_df.loc[slot, day]
+                        %}
+
+                        <tr>
+
+                            <td>{{ time }}</td>
+
+                            <td class="planner-cell
+                                {% if cell_value == 1 %}
+                                    normal-slot
+                                {% elif cell_value == 2 %}
+                                    creative-slot
+                                {% endif %}"
+
+                                data-day="{{ day }}"
+                                data-slot="{{ slot }}">
+
+                                {% if cell_value == 1 %}
+                                    ✓
+                                {% elif cell_value == 2 %}
+                                    ✦
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
 
         {% endfor %}
-    </tr>
-    {% endfor %}
-</tbody>
 
-        </table>
     </div>
 
+
 <script>
-    // Cell state handling
-    const cells = document.querySelectorAll(".planner-cell");
+
+    console.log("SCRIPT LOADED");
+
+
+    // =========================================
+    // CELL STATE
+    // =========================================
+
+    const cells =
+        document.querySelectorAll(".planner-cell");
+
 
     cells.forEach(function(cell) {
 
         cell.onclick = function() {
 
+            // NORMAL → CREATIVE
+
             if (cell.classList.contains("normal-slot")) {
 
                 cell.classList.remove("normal-slot");
                 cell.classList.add("creative-slot");
+
                 cell.innerHTML = "✦";
 
-            } else if (cell.classList.contains("creative-slot")) {
+            }
+
+            // CREATIVE → EMPTY
+
+            else if (cell.classList.contains("creative-slot")) {
 
                 cell.classList.remove("creative-slot");
+
                 cell.innerHTML = "";
 
-            } else {
+            }
+
+            // EMPTY → NORMAL
+
+            else {
 
                 cell.classList.add("normal-slot");
+
                 cell.innerHTML = "✓";
+
             }
 
         };
@@ -100,7 +182,10 @@
     });
 
 
-    // Day navigation
+    // =========================================
+    // DAY NAVIGATION
+    // =========================================
+
     const days = [
         "Monday",
         "Tuesday",
@@ -111,34 +196,460 @@
         "Sunday"
     ];
 
+
     let currentDay = "{{ today }}";
+
 
     const currentDayDisplay =
         document.getElementById("current-day");
 
 
-    document.getElementById("previous-day").onclick = function() {
+    const dayPages =
+        document.querySelectorAll(".day-page");
 
-        let index = days.indexOf(currentDay);
 
-        index = (index - 1 + days.length) % days.length;
+    function showDay(day) {
 
-        currentDay = days[index];
+        dayPages.forEach(function(page) {
 
-        currentDayDisplay.innerHTML = currentDay;
+            if (page.dataset.day === day) {
+
+                page.style.display = "block";
+
+            }
+
+            else {
+
+                page.style.display = "none";
+
+            }
+
+        });
+
+
+        currentDayDisplay.innerHTML = day;
+
+    }
+
+
+    // Show today's page
+
+    showDay(currentDay);
+
+
+    // =========================================
+    // PREVIOUS DAY
+    // =========================================
+
+    document.getElementById("previous-day").onclick =
+    function() {
+
+        let index =
+            days.indexOf(currentDay);
+
+
+        index =
+            (index - 1 + days.length)
+            % days.length;
+
+
+        currentDay =
+            days[index];
+
+
+        showDay(currentDay);
+
     };
 
 
-    document.getElementById("next-day").onclick = function() {
+    // =========================================
+    // NEXT DAY
+    // =========================================
 
-        let index = days.indexOf(currentDay);
+    document.getElementById("next-day").onclick =
+    function() {
 
-        index = (index + 1) % days.length;
+        let index =
+            days.indexOf(currentDay);
 
-        currentDay = days[index];
 
-        currentDayDisplay.innerHTML = currentDay;
+        index =
+            (index + 1)
+            % days.length;
+
+
+        currentDay =
+            days[index];
+
+
+        showDay(currentDay);
+
     };
+
+
+    // =========================================
+    // FIND CONTIGUOUS RANGES
+    // =========================================
+
+    function findRanges(currentCells, className) {
+
+        const ranges = [];
+
+        let start = null;
+        let previousSlot = null;
+
+
+        currentCells.forEach(function(cell) {
+
+            const slot =
+                Number(cell.dataset.slot);
+
+
+            const hasType =
+                cell.classList.contains(className);
+
+
+            if (hasType) {
+
+                if (start === null) {
+
+                    start = slot;
+
+                }
+
+                previousSlot = slot;
+
+            }
+
+            else {
+
+                if (start !== null) {
+
+                    ranges.push({
+
+                        start: start,
+
+                        end: previousSlot + 1
+
+                    });
+
+
+                    start = null;
+                    previousSlot = null;
+
+                }
+
+            }
+
+        });
+
+
+        // Handle range reaching final cell
+
+        if (start !== null) {
+
+            ranges.push({
+
+                start: start,
+
+                end: previousSlot + 1
+
+            });
+
+        }
+
+
+        return ranges;
+
+    }
+
+
+    // =========================================
+    // CONVERT SLOTS TO TIME
+    // =========================================
+
+    function slotsToTime(slots) {
+
+        const totalMinutes =
+            slots * 15;
+
+        const hours =
+            Math.floor(totalMinutes / 60);
+
+        const minutes =
+            totalMinutes % 60;
+
+        return `${hours}:${minutes.toString().padStart(2, "0")}`;
+    }
+
+
+    // =========================================
+    // SEND CURRENT DAY TO PYTHON
+    // =========================================
+
+    document.getElementById("set-day").onclick =
+    function() {
+
+        console.log("SET DAY clicked");
+
+
+        // Get cells belonging to current day
+
+        const currentCells =
+            document.querySelectorAll(
+                `.planner-cell[data-day="${currentDay}"]`
+            );
+
+
+        // Find NORMAL ranges
+
+        const normalRanges =
+            findRanges(
+                currentCells,
+                "normal-slot"
+            );
+
+
+        // Find CREATIVE ranges
+
+        const creativeRanges =
+            findRanges(
+                currentCells,
+                "creative-slot"
+            );
+
+
+        // =========================================
+        // Prepare data
+        // =========================================
+
+        const data = {
+
+            day: currentDay,
+
+            normal_ranges: normalRanges,
+
+            creative_ranges: creativeRanges
+
+        };
+
+
+        console.log(
+            "Sending to Python:",
+            data
+        );
+
+
+        // =========================================
+        // Send data to Flask
+        // =========================================
+
+        fetch("/set_day", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify(data)
+
+        })
+
+
+        .then(function(response) {
+
+            return response.json();
+
+        })
+
+
+        .then(function(data) {
+
+            console.log(
+                "Python response:",
+                data
+            );
+
+
+            // =========================================
+            // Display residuals
+            // =========================================
+
+            document.getElementById(
+                "normal-residual"
+            ).innerHTML =
+                slotsToTime(data.normal_residual);
+
+
+            document.getElementById(
+                "creative-residual"
+            ).innerHTML =
+                slotsToTime(data.creative_residual);
+
+        });
+
+    };
+
+
+    // =========================================
+    // SET REST DAY
+    // =========================================
+
+    document.getElementById("rest-day").onclick =
+    function() {
+
+        const data = {
+
+            day: currentDay
+
+        };
+
+
+        console.log(
+            "Setting rest day:",
+            data
+        );
+
+
+        fetch("/set_rest_day", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify(data)
+
+        })
+
+
+        .then(function(response) {
+
+            return response.json();
+
+        })
+
+
+        .then(function(data) {
+
+            console.log(
+                "Python response:",
+                data
+            );
+
+
+            // Get all cells for the current day
+
+            const currentCells =
+                document.querySelectorAll(
+                    `.planner-cell[data-day="${currentDay}"]`
+                );
+
+
+            // Turn the whole day light blue
+
+            currentCells.forEach(function(cell) {
+
+                cell.classList.add("rest-day-cell");
+
+            });
+
+        });
+
+    };
+
+
+    // =========================================
+    // SET STARTING SLOTS
+    // =========================================
+
+    document.getElementById("set-starting-slots").onclick =
+    function() {
+
+        const startingSlots =
+            Number(
+                document.getElementById("starting-slots").value
+            );
+
+
+        const data = {
+
+            starting_slots: startingSlots
+
+        };
+
+
+        console.log(
+            "Setting starting slots:",
+            data
+        );
+
+
+        fetch("/set_starting_slots", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify(data)
+
+        })
+
+
+        .then(function(response) {
+
+            return response.json();
+
+        })
+
+
+        .then(function(data) {
+
+            console.log(
+                "Python response:",
+                data
+            );
+
+        });
+
+    };
+
+
+    // =========================================
+    // CLEAR CURRENT DAY
+    // =========================================
+
+    document.getElementById("clear-day").onclick =
+    function() {
+
+        const currentCells =
+            document.querySelectorAll(
+                `.planner-cell[data-day="${currentDay}"]`
+            );
+
+
+        currentCells.forEach(function(cell) {
+
+            cell.classList.remove("normal-slot");
+            cell.classList.remove("creative-slot");
+            cell.classList.remove("rest-day-cell");
+
+            cell.innerHTML = "";
+
+        });
+
+    };
+
 </script>
 
 </body>
