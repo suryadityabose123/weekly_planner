@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Weekly Planner</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <h1>Weekly Planner</h1>
+    <div class="day-navigation">
+
+    <button id="previous-day">←</button>
+
+    <span id="current-day">{{ today }}</span>
+
+    <button id="next-day">→</button>
+
+    </div>
+
+    <div class="planner">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                    <th>Saturday</th>
+                    <th>Sunday</th>
+                </tr>
+            </thead>
+
+           <tbody>
+    {% for slot, time in timeslot_conv.items() %}
+    <tr>
+        <td>{{ time }}</td>
+
+        {% for day in timetable.week_df.columns %}
+
+            {% set cell_value = timetable.week_df.loc[slot, day] %}
+
+            <td class="planner-cell
+                {% if cell_value == 1 %} normal-slot
+                {% elif cell_value == 2 %} creative-slot
+                {% endif %}"
+                data-day="{{ day }}"
+                data-slot="{{ slot }}">
+
+                {% if cell_value == 1 %}
+                    ✓
+                {% elif cell_value == 2 %}
+                    ✦
+                {% endif %}
+
+            </td>
+
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</tbody>
+
+        </table>
+    </div>
+
+<script>
+    // Cell state handling
+    const cells = document.querySelectorAll(".planner-cell");
+
+    cells.forEach(function(cell) {
+
+        cell.onclick = function() {
+
+            if (cell.classList.contains("normal-slot")) {
+
+                cell.classList.remove("normal-slot");
+                cell.classList.add("creative-slot");
+                cell.innerHTML = "✦";
+
+            } else if (cell.classList.contains("creative-slot")) {
+
+                cell.classList.remove("creative-slot");
+                cell.innerHTML = "";
+
+            } else {
+
+                cell.classList.add("normal-slot");
+                cell.innerHTML = "✓";
+            }
+
+        };
+
+    });
+
+
+    // Day navigation
+    const days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+    ];
+
+    let currentDay = "{{ today }}";
+
+    const currentDayDisplay =
+        document.getElementById("current-day");
+
+
+    document.getElementById("previous-day").onclick = function() {
+
+        let index = days.indexOf(currentDay);
+
+        index = (index - 1 + days.length) % days.length;
+
+        currentDay = days[index];
+
+        currentDayDisplay.innerHTML = currentDay;
+    };
+
+
+    document.getElementById("next-day").onclick = function() {
+
+        let index = days.indexOf(currentDay);
+
+        index = (index + 1) % days.length;
+
+        currentDay = days[index];
+
+        currentDayDisplay.innerHTML = currentDay;
+    };
+</script>
+
+</body>
+
+</html>
