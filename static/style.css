@@ -191,7 +191,7 @@ td {
 }
 
 .rest-day-cell {
-    background-color: lightblue;
+    background-color: rgb(245, 255, 105);
 }
 
 .hour-slot {
@@ -204,6 +204,9 @@ td {
     box-sizing: border-box;
 }
 
+.night-slot {
+    background-color: rgb(91, 160, 255);
+}
 
 /* =========================
    SELECTION
@@ -212,16 +215,16 @@ td {
 .selected-slot {
     background-color: yellow;
 
-    border-left: 2px solid black;
-    border-right: 2px solid black;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
 }
 
 .selected-slot:first-child {
-    border-top: 2px solid black;
+    border-top: 1px solid black;
 }
 
 .selected-slot:last-child {
-    border-bottom: 2px solid black;
+    border-bottom: 1px solid black;
 }
 
 
@@ -276,4 +279,11 @@ td {
 
     font-family: Arial, sans-serif;
     font-size: 16px;
+}
+.quarter-area,
+.merged-slot {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
 }

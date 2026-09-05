@@ -144,6 +144,9 @@ const cells =
 
 let isDragging = false;
 let selectedCells = [];
+let longPressTimer = null;
+let isLongPress = false;
+let activeTouchCell = null;
 
 
 // =========================================
@@ -212,6 +215,12 @@ function clearSelection() {
 // =========================================
 
 cells.forEach(function(cell) {
+     
+        const row = Number(cell.dataset.slot);
+
+    if (row >= 92 || row < 28) {
+        cell.classList.add("night-slot");
+    }
 
 
     // =====================================
@@ -373,6 +382,144 @@ document.addEventListener(
     }
 );
 
+// =========================================
+// MOBILE LONG-PRESS SELECTION
+// =========================================
+
+cells.forEach(function(cell) {
+
+    cell.addEventListener(
+        "touchstart",
+        function(event) {
+
+            if (event.touches.length !== 1) {
+                return;
+            }
+
+            activeTouchCell = cell;
+            isLongPress = false;
+
+            longPressTimer = setTimeout(
+                function() {
+
+                    isLongPress = true;
+
+                    clearSelection();
+
+                    isDragging = true;
+
+                    cell.classList.add(
+                        "selected-slot"
+                    );
+
+                    selectedCells.push(cell);
+
+
+                    // Haptic feedback
+                    if (navigator.vibrate) {
+
+                        navigator.vibrate(50);
+
+                    }
+
+                },
+                500
+            );
+
+        },
+        { passive: true }
+    );
+
+
+    cell.addEventListener(
+        "touchmove",
+        function(event) {
+
+            // Before long-press:
+            // cancel selection and allow scrolling
+
+            if (!isLongPress) {
+
+                clearTimeout(longPressTimer);
+
+                return;
+
+            }
+
+
+            event.preventDefault();
+
+
+            const touch =
+                event.touches[0];
+
+
+            const element =
+                document.elementFromPoint(
+                    touch.clientX,
+                    touch.clientY
+                );
+
+
+            if (
+                element &&
+                element.classList.contains(
+                    "quarter-area"
+                ) &&
+                !selectedCells.includes(element)
+            ) {
+
+                element.classList.add(
+                    "selected-slot"
+                );
+
+                selectedCells.push(element);
+
+            }
+
+        },
+        { passive: false }
+    );
+
+
+    cell.addEventListener(
+        "touchend",
+        function(event) {
+
+            clearTimeout(longPressTimer);
+
+            isDragging = false;
+
+            activeTouchCell = null;
+
+
+            // Prevent the touch from becoming
+            // an accidental normal click
+
+            if (isLongPress) {
+
+                event.preventDefault();
+
+            }
+
+        }
+    );
+
+
+    cell.addEventListener(
+        "touchcancel",
+        function() {
+
+            clearTimeout(longPressTimer);
+
+            isDragging = false;
+
+            activeTouchCell = null;
+
+        }
+    );
+
+});
 
 // =========================================
 // CREATE MERGED SLOT
@@ -660,6 +807,106 @@ function createMergedSlot(selected) {
     // =====================================
 
     textarea.focus();
+
+    let mergedLongPressTimer = null;
+
+
+mergedSlot.addEventListener(
+    "touchstart",
+    function() {
+
+        mergedLongPressTimer = setTimeout(
+            function() {
+
+                // Vibrate
+
+                if (navigator.vibrate) {
+
+                    navigator.vibrate(50);
+
+                }
+
+
+                // Normal → Creative
+
+                if (state === "normal") {
+
+                    state = "creative";
+
+                    mergedSlot.classList.remove(
+                        "normal-slot"
+                    );
+
+                    mergedSlot.classList.add(
+                        "creative-slot"
+                    );
+
+
+                    selected.forEach(function(cell) {
+
+                        setState(
+                            cell,
+                            "creative"
+                        );
+
+                    });
+
+                    return;
+
+                }
+
+
+                // Creative → Empty
+
+                if (state === "creative") {
+
+                    state = "empty";
+
+
+                    selected.forEach(function(cell) {
+
+                        setState(
+                            cell,
+                            "empty"
+                        );
+
+                    });
+
+
+                    mergedSlot.remove();
+
+                }
+
+            },
+            500
+        );
+
+    }
+);
+
+
+mergedSlot.addEventListener(
+    "touchend",
+    function() {
+
+        clearTimeout(
+            mergedLongPressTimer
+        );
+
+    }
+);
+
+
+mergedSlot.addEventListener(
+    "touchmove",
+    function() {
+
+        clearTimeout(
+            mergedLongPressTimer
+        );
+
+    }
+);
 
 }
 
