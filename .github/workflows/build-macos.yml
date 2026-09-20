@@ -24,7 +24,7 @@ jobs:
 
       - name: Build app
         run: |
-          pyinstaller --clean --windowed --onefile \
+          pyinstaller --clean --windowed  \
             --add-data "templates:templates" \
             --add-data "static:static" \
             --name WeeklyPlanner \
