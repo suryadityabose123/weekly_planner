@@ -119,6 +119,26 @@
             </button>
 
         </div>
+                <!-- Background -->
+        <div class="settings-item">
+
+            <label for="background-select">
+                Background:
+            </label>
+
+            <select id="background-select">
+
+                <option value="grid">
+                    Grid
+                </option>
+
+                <option value="jpeg">
+                    Whimsy
+                </option>
+
+            </select>
+
+        </div>
 
     </div>
 
@@ -352,7 +372,31 @@ settingsButton.addEventListener(
     }
 );
 
+const backgroundSelect =
+    document.getElementById(
+        "background-select"
+    );
 
+backgroundSelect.addEventListener(
+    "change",
+    function () {
+
+        if (this.value === "jpeg") {
+
+            document.body.classList.add(
+                "jpeg-background"
+            );
+
+        } else {
+
+            document.body.classList.remove(
+                "jpeg-background"
+            );
+
+        }
+
+    }
+);
 
 const setDailyNormalHoursButton =
     document.getElementById(

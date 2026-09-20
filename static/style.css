@@ -31,7 +31,16 @@ body {
     background-size: 30px 30px;
 }
 
+body.jpeg-background {
+    background-image: url("/static/BgImage/imageBG.jpg");
 
+    background-size: cover;
+
+    background-position: center;
+    background-repeat: no-repeat;
+
+    background-attachment: fixed;
+}
 /* =========================================================
    TITLE
    ========================================================= */
