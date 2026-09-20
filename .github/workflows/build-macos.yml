@@ -22,9 +22,10 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build app
+      - name: Build macOS app
         run: |
-          pyinstaller --clean --windowed  \
+          pyinstaller --clean --windowed \
+            --target-architecture x86_64 \
             --add-data "templates:templates" \
             --add-data "static:static" \
             --name WeeklyPlanner \
@@ -34,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: WeeklyPlanner-macOS
-          path: dist/WeeklyPlanner
+          path: dist/WeeklyPlanner.app
