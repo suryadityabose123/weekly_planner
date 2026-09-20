@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Weekly Planner</title>
+
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+
+
+
+</head>
+
+
+<body>
+
+
+    <!-- =================================================
+         TITLE
+         ================================================= -->
+
+    <h1>
+        Weekly Planner
+    </h1>
+
+
+<!-- =================================================
+     MAIN CONTROLS
+     ================================================= -->
+
+<div class="main-controls">
+
+    <button id="rest-day">
+        REST DAY
+    </button>
+
+    <button id="reset-day-button">
+        RESET DAY
+    </button>
+
+</div>
+
+
+<!-- =================================================
+     SETTINGS
+     ================================================= -->
+
+<div class="settings-container">
+
+    <button id="settings-button">
+        ⚙ SETTINGS
+    </button>
+
+    <div
+        id="settings-panel"
+        class="settings-panel"
+        style="display: none;"
+    >
+
+        <!-- Daily normal hours -->
+
+        <div class="settings-item">
+
+            <label for="daily-normal-hours">
+                Daily normal hours:
+            </label>
+
+            <select id="daily-normal-hours">
+
+                {% for minutes in range(240, 721, 15) %}
+
+                <option
+                    value="{{ minutes }}"
+                    {% if minutes == 480 %}selected{% endif %}
+                >
+                    {{ minutes // 60 }}:{{ "%02d" | format(minutes % 60) }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+            <button id="set-daily-normal-hours">
+                SET HOURS
+            </button>
+
+        </div>
+
+
+        <!-- Starting slots -->
+
+        <div class="settings-item">
+
+            <label for="starting-slots">
+                Starting slots:
+            </label>
+
+            <input
+                type="number"
+                id="starting-slots"
+                min="0"
+                value="0"
+            >
+
+            <button id="set-starting-slots">
+                SET STARTING SLOTS
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+   
+
+    <!-- =================================================
+         RESIDUALS
+         ================================================= -->
+
+    <div id="residual-display">
+
+        <p>
+
+            Normal residual:
+
+            <span id="normal-residual">
+                -
+            </span>
+
+        </p>
+
+
+        <p>
+
+            Creative residual:
+
+            <span id="creative-residual">
+                -
+            </span>
+
+        </p>
+
+    </div>
+
+
+    <!-- =================================================
+         DAY NAVIGATION
+         ================================================= -->
+
+    <div class="day-navigation">
+
+        <button id="previous-day">
+            ←
+        </button>
+
+
+        <span id="current-day">
+            {{ today }}
+        </span>
+
+
+        <button id="next-day">
+            →
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         PLANNER
+         ================================================= -->
+
+    <div class="planner">
+
+
+        {% for day in timetable.week_df.columns %}
+
+
+        <div
+            class="
+                day-page
+                {% if timetable.rest_day == day %}
+                    rest-day-page
+                {% endif %}
+            "
+
+            data-day="{{ day }}"
+
+            data-blocks='{{ timetable.text_blocks[day] | tojson }}'
+        >
+
+            <div class="current-time-line"></div>
+            <table class="planner-table">
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Time
+                        </th>
+
+                        <th>
+                            Slot
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                    {% for hour in range(24) %}
+
+
+                    <tr>
+
+
+                        <td class="time-label">
+
+                            {{ timeslot_conv[hour * 4] }}
+
+                        </td>
+
+
+                        <td
+                            class="
+                                hour-slot
+                                {% if hour >= 23 or hour < 7 %}
+                                    night-slot
+                                {% endif %}
+                            "
+                            data-hour="{{ hour }}"
+                        >
+                        </td>
+
+
+                    </tr>
+
+
+                    {% endfor %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+        {% endfor %}
+
+
+    </div>
+
+
+<script>
+
+
+console.log("SCRIPT LOADED");
+
+
+// =====================================================
+// CONSTANTS
+// =====================================================
+
+const SLOT_HEIGHT = 20;
+
+
+// 4 fifteen-minute slots per hour
+// 24 hours
+// 96 slots total.
+
+
+// =====================================================
+// DAY NAVIGATION
+// =====================================================
+
+const dayPages =
+    document.querySelectorAll(
+        ".day-page"
+    );
+
+
+const currentDayDisplay =
+    document.getElementById(
+        "current-day"
+    );
+
+
+const previousDayButton =
+    document.getElementById(
+        "previous-day"
+    );
+
+const nextDayButton =
+    document.getElementById(
+        "next-day"
+    );
+
+const settingsButton =
+    document.getElementById(
+        "settings-button"
+    );
+
+const settingsPanel =
+    document.getElementById(
+        "settings-panel"
+    );
+
+
+settingsButton.addEventListener(
+    "click",
+    function() {
+
+        if (
+            settingsPanel.style.display ===
+            "none"
+        ) {
+
+            settingsPanel.style.display =
+                "block";
+
+        }
+
+        else {
+
+            settingsPanel.style.display =
+                "none";
+
+        }
+
+    }
+);
+
+
+
+const setDailyNormalHoursButton =
+    document.getElementById(
+        "set-daily-normal-hours"
+    );
+
+
+setDailyNormalHoursButton.addEventListener(
+    "click",
+    async function() {
+
+        const minutes =
+            Number(
+                document.getElementById(
+                    "daily-normal-hours"
+                ).value
+            );
+
+
+        const response =
+            await fetch(
+                "/set_daily_normal_hours",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        minutes: minutes
+                    })
+                }
+            );
+
+
+        await response.json();
+
+        await updateResidual();
+
+
+        settingsPanel.style.display =
+            "none";
+
+    }
+);
+
+let currentDayIndex = 0;
+
+
+const today =
+    currentDayDisplay.textContent.trim();
+
+
+dayPages.forEach(
+    function(page, index) {
+
+        if (
+            page.dataset.day === today
+        ) {
+
+            currentDayIndex = index;
+
+        }
+
+    }
+);
+
+
+// =====================================================
+// SHOW DAY
+// =====================================================
+
+function showDay(index) {
+
+
+    dayPages.forEach(
+        function(page, i) {
+
+            if (i === index) {
+
+                page.style.display =
+                    "block";
+
+            }
+
+            else {
+
+                page.style.display =
+                    "none";
+
+            }
+
+        }
+    );
+
+
+    currentDayDisplay.textContent =
+        dayPages[index].dataset.day;
+
+
+    updateResidual();
+
+}
+
+
+// =====================================================
+// INITIAL DAY
+// =====================================================
+
+showDay(
+    currentDayIndex
+);
+updateCurrentTimeLine();
+
+setTimeout(
+    centreOnCurrentTime,
+    100
+);
+
+// =====================================================
+// PREVIOUS DAY
+// =====================================================
+
+previousDayButton.addEventListener(
+    "click",
+    function() {
+
+
+        currentDayIndex--;
+
+
+        if (
+            currentDayIndex < 0
+        ) {
+
+            currentDayIndex =
+                dayPages.length - 1;
+
+        }
+
+
+        showDay(
+            currentDayIndex
+        );
+
+    }
+);
+
+
+// =====================================================
+// NEXT DAY
+// =====================================================
+
+nextDayButton.addEventListener(
+    "click",
+    function() {
+
+
+        currentDayIndex++;
+
+
+        if (
+            currentDayIndex >=
+            dayPages.length
+        ) {
+
+            currentDayIndex = 0;
+
+        }
+
+
+        showDay(
+            currentDayIndex
+        );
+
+    }
+);
+const resetDayButton =
+    document.getElementById(
+        "reset-day-button"
+    );
+resetDayButton.addEventListener(
+    "click",
+    async function() {
+
+        const day =
+            currentDayDisplay.textContent.trim();
+
+        const response =
+            await fetch(
+                "/reset_day",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        day: day
+                    })
+                }
+            );
+
+        await response.json();
+
+        // Remove the displayed blocks
+        const dayPage =
+            document.querySelector(
+                `.day-page[data-day="${day}"]`
+            );
+
+        dayPage
+            .querySelectorAll(".merged-slot")
+            .forEach(
+                function(block) {
+                    block.remove();
+                }
+            );
+
+        await updateResidual();
+    }
+);
+
+// =====================================================
+// CURRENT IST TIME LINE
+// =====================================================
+
+function getISTTime() {
+
+    const now = new Date();
+
+    const parts =
+        new Intl.DateTimeFormat(
+            "en-IN",
+            {
+                timeZone: "Asia/Kolkata",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            }
+        ).formatToParts(now);
+
+    let hour = 0;
+    let minute = 0;
+
+    parts.forEach(
+        function(part) {
+
+            if (part.type === "hour") {
+                hour = Number(part.value);
+            }
+
+            if (part.type === "minute") {
+                minute = Number(part.value);
+            }
+        }
+    );
+
+    return {
+        hour: hour,
+        minute: minute
+    };
+}
+
+
+function updateCurrentTimeLine() {
+
+    const ist = getISTTime();
+
+    const hour = ist.hour;
+    const minute = ist.minute;
+
+    const currentDayPage =
+        document.querySelector(
+            `.day-page[data-day="${today}"]`
+        );
+
+    if (!currentDayPage) {
+        return;
+    }
+
+    const line =
+        currentDayPage.querySelector(
+            ".current-time-line"
+        );
+
+    if (!line) {
+        return;
+    }
+
+    const hourCell =
+        currentDayPage.querySelector(
+            `.hour-slot[data-hour="${hour}"]`
+        );
+
+    if (!hourCell) {
+        return;
+    }
+
+    const cellRect =
+        hourCell.getBoundingClientRect();
+
+    const pageRect =
+        currentDayPage.getBoundingClientRect();
+
+    const fraction =
+        minute / 60;
+
+    const top =
+        cellRect.top
+        - pageRect.top
+        + cellRect.height * fraction;
+
+    line.style.top =
+        top + "px";
+
+    // -------------------------------------------------
+    // Show line only when viewing today's page
+    // -------------------------------------------------
+
+    if (
+        currentDayDisplay.textContent.trim()
+        === today
+    ) {
+
+        line.style.display = "block";
+
+    }
+    else {
+
+        line.style.display = "none";
+
+    }
+}
+
+
+function centreOnCurrentTime() {
+
+    const ist = getISTTime();
+
+    const currentDayPage =
+        document.querySelector(
+            `.day-page[data-day="${today}"]`
+        );
+
+    if (!currentDayPage) {
+        return;
+    }
+
+    const hourCell =
+        currentDayPage.querySelector(
+            `.hour-slot[data-hour="${ist.hour}"]`
+        );
+
+    if (!hourCell) {
+        return;
+    }
+
+    const cellRect =
+        hourCell.getBoundingClientRect();
+
+    const pageRect =
+        currentDayPage.getBoundingClientRect();
+
+    const fraction =
+        ist.minute / 60;
+
+    const linePosition =
+        cellRect.top
+        - pageRect.top
+        + cellRect.height * fraction;
+
+    const absolutePosition =
+        pageRect.top
+        + linePosition;
+
+    const targetScroll =
+        absolutePosition
+        - window.innerHeight / 2;
+
+    window.scrollTo({
+        top: targetScroll,
+        behavior: "smooth"
+    });
+}
+// =====================================================
+// GET SLOT FROM MOUSE POSITION
+// =====================================================
+
+function getSlotFromMouse(
+    hourCell,
+    clientY
+) {
+
+
+    const rect =
+        hourCell.getBoundingClientRect();
+
+
+    let relativeY =
+        clientY - rect.top;
+
+
+    if (relativeY < 0) {
+        relativeY = 0;
+    }
+
+
+    if (relativeY >= rect.height) {
+        relativeY = rect.height - 1;
+    }
+
+
+    const quarter =
+        Math.floor(
+            relativeY / SLOT_HEIGHT
+        );
+
+
+    const hour =
+        Number(
+            hourCell.dataset.hour
+        );
+
+
+    return (
+        hour * 4
+        + quarter
+    );
+
+}
+
+
+// =====================================================
+// GET HOUR CELL FROM MOUSE POSITION
+// =====================================================
+
+function getHourCellAt(
+    clientX,
+    clientY
+) {
+
+
+    const element =
+        document.elementFromPoint(
+            clientX,
+            clientY
+        );
+
+
+    if (!element) {
+        return null;
+    }
+
+
+    return element.closest(
+        ".hour-slot"
+    );
+
+}
+
+
+// =====================================================
+// RIGHT-CLICK DRAG
+// =====================================================
+
+let isDragging = false;
+
+let dragStart = null;
+
+let dragEnd = null;
+
+let dragDay = null;
+
+
+// =====================================================
+// PREVENT BROWSER MENU
+// =====================================================
+
+document.addEventListener(
+    "contextmenu",
+    function(event) {
+
+        event.preventDefault();
+
+    }
+);
+
+
+// =====================================================
+// START DRAG
+// =====================================================
+
+document.addEventListener(
+    "mousedown",
+    function(event) {
+
+
+        if (event.button !== 2) {
+            return;
+        }
+
+
+        const hourCell =
+            event.target.closest(
+                ".hour-slot"
+            );
+
+
+        if (!hourCell) {
+            return;
+        }
+
+
+        const dayPage =
+            hourCell.closest(
+                ".day-page"
+            );
+
+
+        // Do not create blocks on a rest day.
+
+        if (
+            dayPage.classList.contains(
+                "rest-day-page"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        dragDay =
+            dayPage.dataset.day;
+
+
+        dragStart =
+            getSlotFromMouse(
+                hourCell,
+                event.clientY
+            );
+
+
+        dragEnd =
+            dragStart + 1;
+
+
+        isDragging = true;
+
+    }
+);
+
+
+// =====================================================
+// CONTINUE DRAG
+// =====================================================
+
+document.addEventListener(
+    "mousemove",
+    function(event) {
+
+
+        if (!isDragging) {
+            return;
+        }
+
+
+        const hourCell =
+            getHourCellAt(
+                event.clientX,
+                event.clientY
+            );
+
+
+        if (!hourCell) {
+            return;
+        }
+
+
+        const dayPage =
+            hourCell.closest(
+                ".day-page"
+            );
+
+
+        if (
+            dayPage.dataset.day !==
+            dragDay
+        ) {
+
+            return;
+
+        }
+
+
+        const currentSlot =
+            getSlotFromMouse(
+                hourCell,
+                event.clientY
+            );
+
+
+        if (
+            currentSlot >= dragStart
+        ) {
+
+            dragEnd =
+                currentSlot + 1;
+
+        }
+
+        else {
+
+            dragEnd =
+                dragStart + 1;
+
+        }
+
+    }
+);
+
+
+// =====================================================
+// FINISH DRAG
+// =====================================================
+
+document.addEventListener(
+    "mouseup",
+    async function(event) {
+
+
+        if (
+            event.button !== 2
+            || !isDragging
+        ) {
+
+            return;
+
+        }
+
+
+        isDragging = false;
+
+
+        if (
+            dragStart === null
+            || dragEnd === null
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            dragEnd <= dragStart
+        ) {
+
+            dragStart = null;
+
+            dragEnd = null;
+
+            return;
+
+        }
+
+
+        const block = {
+
+            day: dragDay,
+
+            start: dragStart,
+
+            end: dragEnd,
+
+            type: "normal",
+
+            text: ""
+
+        };
+
+
+        await createMergedSlot(
+            block
+        );
+
+
+        dragStart = null;
+
+        dragEnd = null;
+
+        dragDay = null;
+
+    }
+);
+
+
+// =====================================================
+// CREATE MERGED SLOT
+// =====================================================
+
+async function createMergedSlot(
+    block
+) {
+
+
+    // -----------------------------------------------
+    // Check overlap
+    // -----------------------------------------------
+
+    const dayPage =
+        document.querySelector(
+            `.day-page[data-day="${block.day}"]`
+        );
+
+
+    const existingBlocks =
+        dayPage.querySelectorAll(
+            ".merged-slot"
+        );
+
+
+    for (
+        const existing of existingBlocks
+    ) {
+
+
+        const existingStart =
+            Number(
+                existing.dataset.start
+            );
+
+
+        const existingEnd =
+            Number(
+                existing.dataset.end
+            );
+
+
+        if (
+            block.start < existingEnd
+            && block.end > existingStart
+        ) {
+
+            console.log(
+                "Block overlaps existing block."
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    // -----------------------------------------------
+    // Create visual block
+    // -----------------------------------------------
+
+    const hourCell =
+        dayPage.querySelector(
+            `.hour-slot[data-hour="${
+                Math.floor(block.start / 4)
+            }"]`
+        );
+
+
+    if (!hourCell) {
+        return;
+    }
+
+
+    const firstRect =
+        hourCell.getBoundingClientRect();
+
+
+    const pageRect =
+        dayPage.getBoundingClientRect();
+
+
+    const firstQuarter =
+        block.start % 4;
+
+
+    const top =
+        (
+            firstRect.top
+            - pageRect.top
+            + firstQuarter * SLOT_HEIGHT
+        );
+
+
+    const height =
+        (
+            block.end
+            - block.start
+        ) * SLOT_HEIGHT;
+
+
+    const mergedSlot =
+        document.createElement(
+            "div"
+        );
+
+
+    mergedSlot.classList.add(
+        "merged-slot",
+        "normal-slot"
+    );
+
+
+    mergedSlot.dataset.start =
+        block.start;
+
+
+    mergedSlot.dataset.end =
+        block.end;
+
+
+    mergedSlot.dataset.type =
+        "normal";
+
+
+    mergedSlot.style.left =
+        (
+            firstRect.left
+            - pageRect.left
+        ) + "px";
+
+
+    mergedSlot.style.top =
+        top + "px";
+
+
+    mergedSlot.style.width =
+        firstRect.width + "px";
+
+
+    mergedSlot.style.height =
+        height + "px";
+
+
+    dayPage.appendChild(
+        mergedSlot
+    );
+
+
+    // -----------------------------------------------
+    // Textarea
+    // -----------------------------------------------
+
+    const textArea =
+        document.createElement(
+            "textarea"
+        );
+
+
+    textArea.placeholder =
+        "Enter text...";
+
+
+    textArea.value =
+        block.text || "";
+
+
+    mergedSlot.appendChild(
+        textArea
+    );
+
+
+    // -----------------------------------------------
+    // Text editing
+    // -----------------------------------------------
+
+    let textEdited = false;
+
+
+    textArea.addEventListener(
+        "input",
+        function() {
+
+            textEdited = true;
+
+        }
+    );
+
+
+    textArea.addEventListener(
+        "click",
+        async function() {
+
+
+            if (!textEdited) {
+                return;
+            }
+
+
+            block.text =
+                textArea.value;
+
+
+            await saveBlock(
+                block
+            );
+
+
+            textEdited = false;
+
+
+            await updateResidual();
+
+        }
+    );
+
+
+    // -----------------------------------------------
+    // Right-click state cycle
+    // -----------------------------------------------
+
+    let state = "normal";
+
+
+    let justCreated = true;
+
+
+    mergedSlot.addEventListener(
+        "contextmenu",
+        async function(event) {
+
+
+            event.preventDefault();
+
+
+            // Ignore the right click which
+            // originally created this block.
+
+            if (justCreated) {
+
+                justCreated = false;
+
+                return;
+
+            }
+
+
+            // ========================================
+            // NORMAL → CREATIVE
+            // ========================================
+
+            if (
+                state === "normal"
+            ) {
+
+
+                state = "creative";
+
+
+                block.type =
+                    "creative";
+
+
+                mergedSlot.classList.remove(
+                    "normal-slot"
+                );
+
+
+                mergedSlot.classList.add(
+                    "creative-slot"
+                );
+
+
+                mergedSlot.dataset.type =
+                    "creative";
+
+
+                await saveBlock(
+                    block
+                );
+
+
+                await updateResidual();
+
+
+                return;
+
+            }
+
+
+            // ========================================
+            // CREATIVE → DELETE
+            // ========================================
+
+            if (
+                state === "creative"
+            ) {
+
+
+                await deleteBlock(
+                    block
+                );
+
+
+                mergedSlot.remove();
+
+
+                await updateResidual();
+
+            }
+
+        }
+    );
+
+
+    // -----------------------------------------------
+    // Save initial block
+    // -----------------------------------------------
+
+    await saveBlock(
+        block
+    );
+
+
+    await updateResidual();
+
+}
+
+
+// =====================================================
+// RENDER EXISTING BLOCK
+// =====================================================
+
+function renderExistingBlock(
+    dayPage,
+    block
+) {
+
+    block.day = dayPage.dataset.day;
+    const hourCell =
+        dayPage.querySelector(
+            `.hour-slot[data-hour="${
+                Math.floor(block.start / 4)
+            }"]`
+        );
+
+
+    if (!hourCell) {
+        return;
+    }
+
+
+    const firstRect =
+        hourCell.getBoundingClientRect();
+
+
+    const pageRect =
+        dayPage.getBoundingClientRect();
+
+
+    const firstQuarter =
+        block.start % 4;
+
+
+    const top =
+        (
+            firstRect.top
+            - pageRect.top
+            + firstQuarter * SLOT_HEIGHT
+        );
+
+
+    const height =
+        (
+            block.end
+            - block.start
+        ) * SLOT_HEIGHT;
+
+
+    const mergedSlot =
+        document.createElement(
+            "div"
+        );
+
+
+    mergedSlot.classList.add(
+        "merged-slot"
+    );
+
+
+    if (
+        block.type === "creative"
+    ) {
+
+        mergedSlot.classList.add(
+            "creative-slot"
+        );
+
+    }
+
+    else {
+
+        mergedSlot.classList.add(
+            "normal-slot"
+        );
+
+    }
+
+
+    mergedSlot.dataset.start =
+        block.start;
+
+
+    mergedSlot.dataset.end =
+        block.end;
+
+
+    mergedSlot.style.left =
+        (
+            firstRect.left
+            - pageRect.left
+        ) + "px";
+
+
+    mergedSlot.style.top =
+        top + "px";
+
+
+    mergedSlot.style.width =
+        firstRect.width + "px";
+
+
+    mergedSlot.style.height =
+        height + "px";
+
+
+    dayPage.appendChild(
+        mergedSlot
+    );
+
+
+    // -----------------------------------------------
+    // Textarea
+    // -----------------------------------------------
+
+    const textArea =
+        document.createElement(
+            "textarea"
+        );
+
+
+    textArea.placeholder =
+        "Enter text...";
+
+
+    textArea.value =
+        block.text || "";
+
+
+    mergedSlot.appendChild(
+        textArea
+    );
+
+
+    // -----------------------------------------------
+    // Current state
+    // -----------------------------------------------
+
+    let state =
+        block.type;
+
+
+    let textEdited = false;
+
+
+    textArea.addEventListener(
+        "input",
+        function() {
+
+            textEdited = true;
+
+        }
+    );
+
+
+    textArea.addEventListener(
+        "click",
+        async function() {
+
+
+            if (!textEdited) {
+                return;
+            }
+
+
+            block.text =
+                textArea.value;
+
+
+            await saveBlock(
+                block
+            );
+
+
+            textEdited = false;
+
+
+            await updateResidual();
+
+        }
+    );
+
+
+    // -----------------------------------------------
+    // Right click cycle
+    // -----------------------------------------------
+
+    mergedSlot.addEventListener(
+        "contextmenu",
+        async function(event) {
+
+
+            event.preventDefault();
+
+
+            if (
+                state === "normal"
+            ) {
+
+
+                state = "creative";
+
+
+                block.type =
+                    "creative";
+
+
+                mergedSlot.classList.remove(
+                    "normal-slot"
+                );
+
+
+                mergedSlot.classList.add(
+                    "creative-slot"
+                );
+
+
+                await saveBlock(
+                    block
+                );
+
+
+                await updateResidual();
+
+
+                return;
+
+            }
+
+
+            if (
+                state === "creative"
+            ) {
+
+
+                await deleteBlock(
+                    block
+                );
+
+
+                mergedSlot.remove();
+
+
+                await updateResidual();
+
+            }
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// RENDER EXISTING BLOCKS
+// =====================================================
+
+dayPages.forEach(
+    function(dayPage) {
+
+
+        const blocks =
+            JSON.parse(
+                dayPage.dataset.blocks
+            );
+
+
+        blocks.forEach(
+            function(block) {
+
+                renderExistingBlock(
+                    dayPage,
+                    block
+                );
+
+            }
+        );
+
+    }
+);
+
+
+
+// =====================================================
+// REST DAY
+// =====================================================
+
+const restDayButton =
+    document.getElementById(
+        "rest-day"
+    );
+
+
+restDayButton.addEventListener(
+    "click",
+    async function() {
+
+
+        const day =
+            currentDayDisplay.textContent.trim();
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    "/set_rest_day",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                day: day
+                            })
+
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            const dayPage =
+                document.querySelector(
+                    `.day-page[data-day="${day}"]`
+                );
+
+
+            // -----------------------------------------
+            // Toggle colour
+            // -----------------------------------------
+
+            if (
+                result.active
+            ) {
+
+                dayPage.classList.add(
+                    "rest-day-page"
+                );
+
+            }
+
+            else {
+
+                dayPage.classList.remove(
+                    "rest-day-page"
+                );
+
+            }
+
+
+            await updateResidual();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Error setting rest day:",
+                error
+            );
+
+        }
+
+    }
+);
+
+
+// =====================================================
+// STARTING SLOTS
+// =====================================================
+
+const startingSlotsButton =
+    document.getElementById(
+        "set-starting-slots"
+    );
+
+
+startingSlotsButton.addEventListener(
+    "click",
+    async function() {
+
+        const startingSlots =
+            Number(
+                document.getElementById(
+                    "starting-slots"
+                ).value
+            );
+
+        try {
+
+            const response =
+                await fetch(
+                    "/set_starting_slots",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                starting_slots:
+                                    startingSlots
+                            })
+                    }
+                );
+
+            await response.json();
+
+            await updateResidual();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Error setting starting slots:",
+                error
+            );
+
+        }
+
+    }
+);
+
+
+
+// =====================================================
+// SAVE BLOCK
+// =====================================================
+
+async function saveBlock(
+    block
+) {
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                "/save_block",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(block)
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Block saved:",
+            result
+        );
+
+
+        return result;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error saving block:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// DELETE BLOCK
+// =====================================================
+
+async function deleteBlock(
+    block
+) {
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                "/delete_block",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            day: block.day,
+
+                            start: block.start,
+
+                            end: block.end
+
+                        })
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Block deleted:",
+            result
+        );
+
+
+        return result;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error deleting block:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// UPDATE RESIDUAL
+// =====================================================
+
+async function updateResidual() {
+
+
+    const day =
+        currentDayDisplay.textContent.trim();
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                "/get_residual",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            day: day
+                        })
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        document.getElementById(
+            "normal-residual"
+        ).textContent =
+            result.normal_residual;
+
+
+        document.getElementById(
+            "creative-residual"
+        ).textContent =
+            result.creative_residual;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error getting residual:",
+            error
+        );
+
+    }
+
+}
+setInterval(
+    updateCurrentTimeLine,
+    60000
+);
+
+</script>
+
+
+</body>
+
+</html>

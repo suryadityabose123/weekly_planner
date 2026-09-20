@@ -1,16 +1,18 @@
-import os
 import pandas as pd
 import numpy as np
-import datetime
+
+
+# =====================================================
+# SLOT TYPES
+# =====================================================
 
 EMPTY = 0
 NORMAL = 1
 CREATIVE = 2
 
-DAILY_NORMAL_SLOTS = 32
-DAILY_CREATIVE_SLOTS = 4
 
-# Display dictionary
+
+
 
 calendar_disp_dict = {
     EMPTY: "Plain_White",
@@ -19,192 +21,354 @@ calendar_disp_dict = {
 }
 
 
-# Human-readable default schedule
-default_ranges = {
-    "Monday": [
-        ("9:00 AM", "11:00 AM"),
-        ("11:30 AM", "1:00 PM"),
-        ("2:45 PM", "5:00 PM"),
-        ("7:00 PM", "9:15 PM")
-    ]
-}
+# =====================================================
+# WEEK STRUCTURE
+# =====================================================
+
+DAYS = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+]
 
 
-# Create all 96 15-minute time slots
 time_series = np.arange(96)
 
-empty_schedule = np.zeros((96, 7), dtype=int)
+
+empty_schedule = np.zeros(
+    (96, 7),
+    dtype=int
+)
+
 
 week_df = pd.DataFrame(
     empty_schedule,
-    columns=[
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-    ],
+    columns=DAYS,
     index=time_series
 )
 
 
+# =====================================================
+# TIME CONVERSION
+# =====================================================
+
 def _to_timeslot(idx):
 
-    hour = idx // 4 if idx <= 51 else (idx - 48) // 4
+    total_minutes = idx * 15
 
-    if idx <= 3:
-        hour = 12
+    hour = (total_minutes // 60) % 24
+    minute = total_minutes % 60
 
-    remainder = idx % 4
+    if hour == 0:
+        display_hour = 12
+        suffix = "AM"
 
-    suffix = "AM" if idx < 48 else "PM"
+    elif hour < 12:
+        display_hour = hour
+        suffix = "AM"
+
+    elif hour == 12:
+        display_hour = 12
+        suffix = "PM"
+
+    else:
+        display_hour = hour - 12
+        suffix = "PM"
 
     return (
-        str(hour)
-        + ":"
-        + str(remainder * 15).zfill(2)
-        + " "
-        + suffix
+        f"{display_hour}:"
+        f"{str(minute).zfill(2)} "
+        f"{suffix}"
     )
 
 
-# Maps:
-# 0 -> "12:00 AM"
-# 1 -> "12:15 AM"
-# ...
-# 95 -> "11:45 PM"
 timeslot_conv = {
     i: _to_timeslot(i)
     for i in range(96)
 }
 
-def validate_ranges(ranges):
 
-    time_to_slot = {
-        value: key
-        for key, value in timeslot_conv.items()
-    }
+# =====================================================
+# TIME VALIDATION
+# =====================================================
+
+def validate_ranges(ranges):
 
     for start, end in ranges:
 
-        if start not in time_to_slot or end not in time_to_slot:
+        if start < 0 or end > 96:
             return False
 
-        start_slot = time_to_slot[start]
-        end_slot = time_to_slot[end]
-
-        if start_slot >= end_slot:
+        if start >= end:
             return False
 
     return True
 
+
+# =====================================================
+# TIMETABLE
+# =====================================================
+
 class TimeTable:
 
-    def __init__(self, month=0, starting_slots=0, rest_day=None):
+    def __init__(
+        self,
+        month=0,
+        starting_slots=0,
+        rest_day=None,
+        daily_normal_slots=32,
+        daily_creative_slots=4
+    ):
 
         self.month = month
+
         self.starting_slots = starting_slots
+
+        # Store the actual day name.
+        # Example: "Wednesday"
         self.rest_day = rest_day
+
+        # Kept for compatibility and for the
+        # timetable's 96-slot structure.
         self.week_df = week_df.copy()
-        self.default_ranges = {
-            day: [
-                ("9:00 AM", "11:00 AM"),
-                ("11:30 AM", "1:00 PM"),
-                ("2:45 PM", "5:00 PM"),
-                ("7:00 PM", "9:15 PM")
-            ]
-            for day in self.week_df.columns
+
+        # The actual user schedule now lives here.
+        self.text_blocks = {
+            day: []
+            for day in DAYS
+        }
+        self.daily_normal_slots = daily_normal_slots
+        self.daily_creative_slots = daily_creative_slots
+
+    # =================================================
+    # ADD BLOCK
+    # =================================================
+
+    def add_text_block(
+        self,
+        day,
+        start,
+        end,
+        block_type="normal",
+        text=""
+    ):
+
+        if day not in DAYS:
+            raise ValueError("Invalid day.")
+
+        if start < 0 or end > 96 or start >= end:
+            raise ValueError("Invalid block range.")
+
+        if block_type not in ["normal", "creative"]:
+            raise ValueError("Invalid block type.")
+
+        block = {
+            "start": int(start),
+            "end": int(end),
+            "type": block_type,
+            "text": text
         }
 
-        self.populate_defaults()
+        self.text_blocks[day].append(block)
+
+        return block
 
 
-    def populate_defaults(self):
+    # =================================================
+    # UPDATE BLOCK
+    # =================================================
 
-        # Reverse lookup:
-        # "9:00 AM" -> 36
-        # "11:00 AM" -> 44
-        time_to_slot = {
-            value: key
-            for key, value in timeslot_conv.items()
-        }
+    def update_text_block(
+        self,
+        day,
+        start,
+        end,
+        block_type=None,
+        text=None
+    ):
 
-        for day, ranges in self.default_ranges.items():
+        for block in self.text_blocks[day]:
 
-            for start, end in ranges:
+            if (
+                block["start"] == start
+                and block["end"] == end
+            ):
 
-                start_slot = time_to_slot[start]
-                end_slot = time_to_slot[end]
+                if block_type is not None:
+                    block["type"] = block_type
 
-                self.week_df.loc[
-                    start_slot:end_slot - 1,
-                    day
-                ] = 1
+                if text is not None:
+                    block["text"] = text
 
-    def assign_slots(self, day, ranges, slot_type=NORMAL):
+                return block
 
-        if not validate_ranges(ranges):
-            raise ValueError("Invalid time ranges provided.")
+        return None
 
-        if slot_type not in calendar_disp_dict:
-            raise ValueError("Invalid slot type provided.")
 
-        time_to_slot = {
-            value: key
-            for key, value in timeslot_conv.items()
-        }
+    # =================================================
+    # REMOVE BLOCK
+    # =================================================
 
-        for start, end in ranges:
+    def remove_text_block(
+        self,
+        day,
+        start,
+        end
+    ):
 
-            start_slot = time_to_slot[start]
-            end_slot = time_to_slot[end]
+        self.text_blocks[day] = [
 
-            self.week_df.loc[
-                start_slot:end_slot - 1,
-                day
-            ] = slot_type         
+            block
+
+            for block in self.text_blocks[day]
+
+            if not (
+                block["start"] == start
+                and block["end"] == end
+            )
+
+        ]
+
+
+    # =================================================
+    # CLEAR DAY BLOCKS
+    # =================================================
+
+    def clear_text_blocks(self, day):
+
+        self.text_blocks[day] = []
+
+
+    # =================================================
+    # CHECK BLOCK OVERLAP
+    # =================================================
+
+    def block_overlaps(
+        self,
+        day,
+        start,
+        end
+    ):
+
+        for block in self.text_blocks[day]:
+
+            existing_start = block["start"]
+            existing_end = block["end"]
+
+            if (
+                start < existing_end
+                and end > existing_start
+            ):
+
+                return True
+
+        return False
+
+
+    # =================================================
+    # RESIDUAL
+    # =================================================
 
     def calc_residual(self, weekday):
 
-        # =========================
-        # NORMAL SLOTS
-        # =========================
+        # weekday is:
+        #
+        # Monday    = 1
+        # Tuesday   = 2
+        # ...
+        # Sunday    = 7
 
-        normal_required = DAILY_NORMAL_SLOTS * weekday
+        days_so_far = DAYS[:weekday]
 
-        if self.rest_day is not None and self.rest_day <= weekday:
-            normal_required -= DAILY_NORMAL_SLOTS
+
+        # ---------------------------------------------
+        # NORMAL REQUIRED
+        # ---------------------------------------------
+
+        normal_required = (
+            self.daily_normal_slots * weekday
+        )
+
+
+        # Rest day removes one day's normal
+        # requirement.
+
+        if self.rest_day in days_so_far:
+
+            normal_required -= self.daily_normal_slots
+
+
+        # Starting slots are additional slots
+        # already available.
 
         normal_required += self.starting_slots
 
-        normal_used = (
-            self.week_df.iloc[:, :weekday] == NORMAL
-        ).sum().sum()
 
-        normal_residual = normal_required - normal_used
+        # ---------------------------------------------
+        # CREATIVE REQUIRED
+        # ---------------------------------------------
 
-
-        # =========================
-        # CREATIVE SLOTS
-        # =========================
-
-        creative_required = DAILY_CREATIVE_SLOTS * weekday
-
-        creative_used = (
-            self.week_df.iloc[:, :weekday] == CREATIVE
-        ).sum().sum()
-
-        creative_residual = creative_required - creative_used
+        creative_required = (
+            self.daily_creative_slots * weekday
+        )
 
 
-        return normal_residual, creative_residual
+        # ---------------------------------------------
+        # NORMAL USED
+        # ---------------------------------------------
 
-if __name__ == "__main__":
+        normal_used = 0
 
-    timetable = TimeTable()
 
-    print(timeslot_conv)
+        # ---------------------------------------------
+        # CREATIVE USED
+        # ---------------------------------------------
 
-    print(timetable.week_df)
+        creative_used = 0
+
+
+        for day in days_so_far:
+
+            # Do not count blocks on a rest day.
+            if day == self.rest_day:
+                continue
+
+
+            for block in self.text_blocks[day]:
+
+                duration = (
+                    block["end"]
+                    - block["start"]
+                )
+
+
+                if block["type"] == "normal":
+
+                    normal_used += duration
+
+
+                elif block["type"] == "creative":
+
+                    creative_used += duration
+
+
+        normal_residual = (
+            normal_required
+            - normal_used
+        )
+
+
+        creative_residual = (
+            creative_required
+            - creative_used
+        )
+
+
+        return (
+            normal_residual,
+            creative_residual
+        )

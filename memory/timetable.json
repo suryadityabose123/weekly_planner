@@ -1,0 +1,14 @@
+{
+    "text_blocks": {
+        "Monday": [],
+        "Tuesday": [],
+        "Wednesday": [],
+        "Thursday": [],
+        "Friday": [],
+        "Saturday": [],
+        "Sunday": []
+    },
+    "rest_day": null,
+    "starting_slots": 0,
+    "daily_normal_slots": 32
+}

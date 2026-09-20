@@ -1,9 +1,21 @@
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+:root {
+    --normal-slot-color: #00ff77;
+    --creative-slot-color: #68ffe8;
+    --background-color: #c8a2e8;
+    --accent-colo-pink: #ff69b4;
+    --highlight-color-gold: rgb(248, 255, 34);
+    --night-slot-color: rgb(91, 160, 255);
+}
 body {
     font-family: Arial, sans-serif;
     margin: 30px;
+    text-align: center;
 
     background-color: #c8a2e8;
-      color: rgb(248, 255, 34);
+    color: rgb(248, 255, 34);
 
     background-image:
         linear-gradient(
@@ -20,18 +32,18 @@ body {
 }
 
 
-/* =========================
+/* =========================================================
    TITLE
-   ========================= */
+   ========================================================= */
 
 h1 {
     text-align: center;
 }
 
 
-/* =========================
+/* =========================================================
    BUTTONS / CONTROLS
-   ========================= */
+   ========================================================= */
 
 button {
     background-color: #ff69b4;
@@ -53,8 +65,6 @@ button:hover {
 }
 
 
-/* Put the main buttons in a row */
-
 #set-day,
 #clear-day,
 #rest-day {
@@ -62,28 +72,102 @@ button:hover {
 }
 
 
-/* Center the main controls */
-
-body {
-    text-align: center;
-}
-
-
-/* Starting slots */
-
 #starting-slots-control {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
 
+    gap: 10px;
     margin: 15px 0;
 }
 
 
-/* =========================
+/* =========================================================
+   SETTINGS MENU
+   ========================================================= */
+
+.settings-container {
+    position: absolute;
+    top: 25px;
+    right: 30px;
+
+    z-index: 100;
+}
+
+
+#settings-button {
+    background-color: #ff69b4;
+}
+
+
+.settings-panel {
+    position: absolute;
+
+    top: 50px;
+    right: 0;
+
+    width: 400px;
+
+    padding: 18px;
+
+    background-color: #ffb6d9;
+
+    border-radius: 10px;
+
+    box-shadow: 4px 4px 0 #1c1721;
+
+    color: black;
+
+    text-align: left;
+}
+
+
+.settings-item {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-bottom: 15px;
+}
+
+
+.settings-item:last-child {
+    margin-bottom: 0;
+}
+
+
+.settings-item label {
+    font-weight: bold;
+
+    flex: 1;
+}
+
+
+.settings-item select,
+.settings-item input {
+    padding: 6px;
+
+    border: 2px solid black;
+    border-radius: 6px;
+
+    background-color: white;
+
+    font-size: 14px;
+}
+
+
+.settings-item button {
+    padding: 7px 10px;
+
+    font-size: 12px;
+
+    border-radius: 8px;
+}
+/* =========================================================
    DAY NAVIGATION
-   ========================= */
+   ========================================================= */
 
 .day-navigation {
     display: flex;
@@ -112,9 +196,9 @@ body {
 }
 
 
-/* =========================
+/* =========================================================
    PLANNER
-   ========================= */
+   ========================================================= */
 
 .planner {
     width: 100%;
@@ -127,14 +211,17 @@ body {
 }
 
 
- /* =========================
-    TABLE
-    ========================= */
+/* =========================================================
+   TABLE
+   ========================================================= */
 
 .planner-table {
     position: relative;
+
     width: 100%;
+
     border-collapse: collapse;
+
     background-color: #ffb6d9;
     color: black;
 }
@@ -165,9 +252,49 @@ td {
     height: 30px;
     background-color: #ffb6d9;
 }
-/* =========================
+
+
+/* =========================================================
+   HOUR CELLS
+   ========================================================= */
+
+.hour-slot {
+    position: relative;
+
+    padding: 0;
+    height: 80px;
+
+    background-color: #ffb6d9;
+
+    cursor: crosshair;
+}
+
+.hour-slot:hover {
+    opacity: 0.9;
+}
+
+
+/* =========================================================
+   QUARTER CELLS
+   ========================================================= */
+
+.quarter-area {
+    height: 25%;
+    box-sizing: border-box;
+}
+
+.quarter-area.planner-cell {
+    cursor: pointer;
+}
+
+.quarter-area.planner-cell:hover {
+    opacity: 0.75;
+}
+
+
+/* =========================================================
    SLOT STATES
-   ========================= */
+   ========================================================= */
 
 .quarter-area.normal-slot {
     background-color: #00ff77;
@@ -178,39 +305,18 @@ td {
 }
 
 
-/* =========================
-   CELL INTERACTION
-   ========================= */
-
-.quarter-area.planner-cell {
-    cursor: pointer;
-}
-
-.quarter-area.planner-cell:hover {
-    opacity: 0.75;
-}
-
-.rest-day-cell {
-    background-color: rgb(245, 255, 105);
-}
-
-.hour-slot {
-    padding: 0;
-    height: 80px;
-}
-
-.quarter-area {
-    height: 25%;
-    box-sizing: border-box;
-}
+/* =========================================================
+   NIGHT SLOTS
+   ========================================================= */
 
 .night-slot {
     background-color: rgb(91, 160, 255);
 }
 
-/* =========================
+
+/* =========================================================
    SELECTION
-   ========================= */
+   ========================================================= */
 
 .selected-slot {
     background-color: yellow;
@@ -228,18 +334,50 @@ td {
 }
 
 
-/* =========================
+/* =========================================================
+   REST DAY
+   ========================================================= */
+
+.rest-day-cell {
+    background-color: rgb(245, 255, 105);
+}
+
+.rest-day-page .planner-table {
+    background-color: rgb(81, 84, 255);
+}
+
+.rest-day-page td,
+.rest-day-page .hour-slot,
+.rest-day-page .time-label {
+    background-color: rgb(0, 87, 249);
+}
+
+.rest-day-page .hour-slot {
+    cursor: default;
+}
+
+.rest-day-label {
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+
+/* =========================================================
    MERGED SLOTS
-   ========================= */
+   ========================================================= */
 
 .merged-slot {
     position: absolute;
+
     z-index: 10;
 
-    border: 2px solid black;
     box-sizing: border-box;
 
+    border: 2px solid black;
+
     cursor: pointer;
+
+    overflow: hidden;
 
     background-color: #00ff77;
 }
@@ -257,9 +395,9 @@ td {
 }
 
 
-/* =========================
+/* =========================================================
    MERGED SLOT TEXT
-   ========================= */
+   ========================================================= */
 
 .merged-slot textarea {
     width: 100%;
@@ -280,10 +418,55 @@ td {
     font-family: Arial, sans-serif;
     font-size: 16px;
 }
+
+
+/* =========================================================
+   MOBILE / TOUCH BEHAVIOUR
+   ========================================================= */
+
 .quarter-area,
 .merged-slot {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+
     touch-action: none;
+}
+
+/* =========================================================
+   CURRENT IST TIME LINE
+   ========================================================= */
+
+.current-time-line {
+    position: absolute;
+
+    left: 10%;
+    right: 0;
+
+    height: 3px;
+
+    background-color: var(--highlight-color-gold);
+
+    z-index: 50;
+
+    pointer-events: none;
+}
+.current-time-line::before,
+.current-time-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 15px;              /* Circle width */
+  height: 15px;             /* Circle height */
+  background-color: rgb(255, 196, 0);   /* Circle color */
+  border-radius: 50%;       /* Makes it a perfect circle */
+  transform: translateY(-50%);
+}
+
+.current-time-line::before {
+  left: 0;                  /* Places circle at the start */
+}
+
+.current-time-line::after {
+  right: 0;                 /* Places circle at the end */
 }
